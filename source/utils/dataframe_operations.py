@@ -48,6 +48,7 @@ class DataFrameOperations:
         *sources: str,
         sep: str | None = None,
         encoding: str | None = None,
+        usecols: Any | None = None,
         **read_csv_kwargs: Any,
     ) -> pd.DataFrame:
         """
@@ -55,12 +56,19 @@ class DataFrameOperations:
 
         If more than one source is given, results are concatenated vertically in order
         (rows from the first file, then the second, etc.) with a fresh index.
+
+        usecols: optional column subset, forwarded to pandas ``read_csv`` (names, indices,
+        or a callable). If passed here, it overrides a ``usecols`` entry in ``read_csv_kwargs``.
         """
         if not sources:
             raise ValueError("At least one CSV source (URL or path) is required.")
 
         use_sep = self._sep if sep is None else sep
         use_enc = self._encoding if encoding is None else encoding
+
+        csv_kwargs = dict(read_csv_kwargs)
+        if usecols is not None:
+            csv_kwargs["usecols"] = usecols
 
         frames: list[pd.DataFrame] = []
         for i, src in enumerate(sources):
@@ -69,7 +77,7 @@ class DataFrameOperations:
                     src,
                     sep=use_sep,
                     encoding=use_enc,
-                    **read_csv_kwargs,
+                    **csv_kwargs,
                 )
             except FileNotFoundError as e:
                 raise FileNotFoundError(
