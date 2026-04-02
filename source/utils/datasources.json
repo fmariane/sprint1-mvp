@@ -3,5 +3,17 @@
   "fator_contribuicao": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/fator_contribuinte.csv",
   "ocorrencia": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/ocorrencia.csv",
   "tipo_de_ocorrencia": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/ocorrencia_tipo.csv",
-  "recomendacao_cenipa": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/recomendacao.csv"
+  "recomendacao_cenipa": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/recomendacao.csv",
+  "vra_2024_01": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_01.csv",
+  "vra_2024_02": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_02.csv",
+  "vra_2024_03": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_03.csv",
+  "vra_2024_04": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_04.csv",
+  "vra_2024_05": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_05.csv",
+  "vra_2024_06": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_06.csv",
+  "vra_2024_07": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_07.csv",
+  "vra_2024_08": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_08.csv",
+  "vra_2024_09": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_09.csv",
+  "vra_2024_10": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_10.csv",
+  "vra_2024_11": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_11.csv",
+  "vra_2024_12": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/VRA/2024/VRA_2024_12.csv"
 }
