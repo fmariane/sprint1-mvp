@@ -1,0 +1,7 @@
+{
+  "aeronave": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/aeronave.csv",
+  "fator_contribuicao": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/fator_contribuinte.csv",
+  "ocorrencia": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/ocorrencia.csv",
+  "tipo_de_ocorrencia": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/ocorrencia_tipo.csv",
+  "recomendacao_cenipa": "https://raw.githubusercontent.com/fmariane/sprint1-mvp/main/datasources/CENIPA_FAB/recomendacao.csv"
+}
