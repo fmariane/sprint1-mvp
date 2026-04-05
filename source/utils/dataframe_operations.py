@@ -7,6 +7,20 @@ from typing import Any
 import pandas as pd
 
 
+def filter_by_year(
+    df: pd.DataFrame,
+    date_col: str,
+    years: list[int],
+    date_format: str = "%d/%m/%Y",
+) -> pd.DataFrame:
+    """Return rows whose *date_col* year is in *years*.
+
+    Converts *date_col* to datetime in-place (idempotent if already datetime).
+    """
+    df[date_col] = pd.to_datetime(df[date_col], format=date_format, errors="coerce")
+    return df[df[date_col].dt.year.isin(years)]
+
+
 def load_datasource_urls(json_path: str | Path | None = None) -> dict[str, str]:
     """Load URL map from JSON. Keys are logical names; values are CSV URLs or paths."""
     if json_path is None:
