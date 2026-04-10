@@ -32,7 +32,7 @@ A pergunta central é: **aeroportos com maior volume de tráfego apresentam prop
 | `df_vra_2023` | 981 206 × 8 | 12 CSVs mensais VRA 2023 (jan–dez) | UTF-8 | `;` |
 | `df_vra_2024` | 987 868 × 8 | 12 CSVs mensais VRA 2024 (jan–dez) | UTF-8 | `;` |
 | `df_ocorrencia` | ~13 186 × 22 | `ocorrencia.csv` (CENIPA/FAB) | latin1 | `;` |
-| `df_aeronave` | não impresso | `aeronave.csv` (CENIPA/FAB) | latin1 | `;` |
+| `df_aeronave` | ~13301, 23 | `aeronave.csv` (CENIPA/FAB) | latin1 | `;` |
 
 As 8 colunas retidas do VRA via `usecols` são: ICAO da empresa, nome da empresa, assentos, ICAO de origem, descrição do aeroporto de origem, ICAO de destino, descrição do aeroporto de destino e `Situação Voo`.
 
@@ -53,11 +53,15 @@ As 8 colunas retidas do VRA via `usecols` são: ICAO da empresa, nome da empresa
 
 ## Análise Estatística — Total de Movimentos por Aeroporto (VRA 2023 vs 2024)
 
+Fonte: `contagem_movimentos_br_icao_*` (agrupado por código ICAO, apenas voos REALIZADOS em aeroportos brasileiros).
+
 | Métrica | 2023 | 2024 |
 |---|---|---|
 | Média | 9.014,10 | 9.066,37 |
 | Mediana | 528,00 | 509,00 |
 | Desvio Padrão | 29.344,22 | 29.831,08 |
+
+> **Nota:** os valores acima serão recalculados automaticamente ao executar o notebook. Podem diferir ligeiramente de versões anteriores que usavam agrupamento por descrição textual ao invés de ICAO.
 
 ### Interpretação
 
@@ -110,99 +114,6 @@ Destaque pela discrepância extrema: a **mediana é 2, mas a média é 17,75** (
 
 ---
 
-## Pipeline — `contagem_fase_aeroporto_2023` / `2024`
-
-### Objetivo
-
-Contar ocorrências por **fase de operação da aeronave** e **aeroporto relevante** (origem ou destino, dependendo da fase), separadas por ano.
-
-### Etapas
-
-#### 1. Filtrar `df_aeronave` com fase conhecida
-
-```python
-df_ocorrencia_fase_voo = df_aeronave[df_aeronave['aeronave_fase_operacao'].notna()]
-```
-
-Descarta linhas de `df_aeronave` sem fase de operação preenchida.
-
-#### 2. Fazer merge com `df_ocorrencia`
-
-```python
-df_ocorrencia_com_fase = df_ocorrencia.merge(
-    df_ocorrencia_fase_voo[['codigo_ocorrencia2', 'aeronave_fase_operacao']],
-    on='codigo_ocorrencia2',
-    how='inner'
-)
-```
-
-Associa cada ocorrência à fase de operação da aeronave envolvida. O `inner join` garante que só entram ocorrências que possuem fase identificada.
-
-#### 3. Filtrar por ano
-
-```python
-df_ocorrencia_com_fase_2023 = filter_by_year(df_ocorrencia_com_fase, 'ocorrencia_dia', [2023])
-df_ocorrencia_com_fase_2024 = filter_by_year(df_ocorrencia_com_fase, 'ocorrencia_dia', [2024])
-```
-
-#### 4. Mapear fase → ponta relevante (`map_fase_airport.json`)
-
-Cada fase de operação é mapeada para a coluna de aeroporto que faz sentido para aquela fase:
-
-| Ponta | Fases incluídas |
-|---|---|
-| `aeronave_voo_origem` | PARTIDA DO MOTOR, DECOLAGEM, SUBIDA, SAÍDA IFR, etc. |
-| `aeronave_voo_destino` | DESCIDA, APROXIMAÇÃO FINAL, POUSO, CORRIDA APÓS POUSO, etc. |
-| `aeronave_fase_operacao` | CRUZEIRO, TÁXI, MANOBRA, PAIRADO, INDETERMINADA, etc. |
-
-```python
-df['ponta'] = df['aeronave_fase_operacao'].map(fase_para_ponta)
-```
-
-#### 5. Resolver o aeroporto por linha (`_aeroporto`)
-
-```python
-def _aeroporto(row):
-    if ponta == 'aeronave_voo_destino':
-        val = row['aeronave_voo_destino']
-    elif ponta == 'aeronave_voo_origem':
-        val = row['aeronave_voo_origem']
-    else:
-        return 'NAO IDENTIFICADO'
-    return val if pd.notna(val) and str(val).strip() not in ('', '***') else 'NAO IDENTIFICADO'
-```
-
-Fases sem ponta clara (CRUZEIRO, TÁXI, etc.) resultam em `'NAO IDENTIFICADO'`.
-
-#### 6. Agrupar e contar (`_build_fase_aeroporto`)
-
-```python
-df.groupby(['aeronave_fase_operacao', 'ponta', 'aeroporto'], dropna=False)
-  .size()
-  .reset_index(name='contagem')
-  .sort_values(['aeronave_fase_operacao', 'contagem'], ascending=[True, False])
-```
-
-#### 7. Resultado final
-
-```python
-contagem_fase_aeroporto_2023 = _build_fase_aeroporto(df_ocorrencia_com_fase_2023)
-contagem_fase_aeroporto_2024 = _build_fase_aeroporto(df_ocorrencia_com_fase_2024)
-```
-
-Cada linha do DataFrame resultante representa uma combinação de **(fase de operação, ponta, aeroporto)** com sua respectiva contagem de ocorrências no ano.
-
-### Esquema do DataFrame resultante
-
-| Coluna | Descrição |
-|---|---|
-| `aeronave_fase_operacao` | Fase do voo no momento da ocorrência |
-| `ponta` | Coluna usada para resolver o aeroporto (`voo_origem`, `voo_destino` ou `fase_operacao`) |
-| `aeroporto` | Nome do aeroporto de origem ou destino (ou `NAO IDENTIFICADO`) |
-| `contagem` | Número de ocorrências para aquela combinação |
-
----
-
 ## Análise de Taxa de Ocorrência por Aeroporto
 
 ### Objetivo
@@ -224,12 +135,11 @@ Os dois datasets não compartilham nenhum identificador de aeroporto diretamente
 
 #### Etapa 1 — Extração de ocorrências CENIPA por aeroporto e classificação
 
-Função `_build_ocorrencias_por_aeroporto(df_com_fase)`:
+Função `build_ocorrencias_por_aeroporto(df_com_fase, df_aeronave)` em `utils/dataframe_operations.py`:
 
-1. Faz merge de `df_ocorrencia_com_fase_YYYY` (que já contém `ocorrencia_classificacao` vinda de `df_ocorrencia`) com `_aeronave_aeroportos` nas colunas `['codigo_ocorrencia2', 'aeronave_fase_operacao']`, para trazer `aeronave_voo_origem` e `aeronave_voo_destino`.
-2. Mapeia cada fase de operação para a ponta relevante (`aeronave_voo_origem` ou `aeronave_voo_destino`) via `fase_para_ponta` (mesma lógica de `_build_fase_aeroporto`).
-3. Descarta linhas com aeroporto `'NAO IDENTIFICADO'`, nulo, vazio ou `'***'`.
-4. Agrupa por `(aeroporto, ocorrencia_classificacao)` e conta.
+1. Chama `resolve_aeroporto(df_com_fase, df_aeronave)` — helper compartilhado que faz merge com `df_aeronave` nas colunas `['codigo_ocorrencia2', 'aeronave_fase_operacao']` para trazer `aeronave_voo_origem` e `aeronave_voo_destino`, mapeia cada fase para a ponta relevante via `map_fase_airport.json` (carregado internamente), e resolve o aeroporto por linha.
+2. Descarta linhas com aeroporto `'NAO IDENTIFICADO'` (nulo, vazio ou `'***'`).
+3. Agrupa por `(aeroporto, ocorrencia_classificacao)` e conta.
 
 Resultado: `contagem_ocorrencias_aeroporto_YYYY` com colunas `aeroporto` (nome CENIPA), `ocorrencia_classificacao`, `contagem`.
 
@@ -360,8 +270,6 @@ flowchart TD
         dfComFase["df_ocorrencia_com_fase\ninner join por codigo_ocorrencia2"]
         dfFase23["df_ocorrencia_com_fase_2023"]
         dfFase24["df_ocorrencia_com_fase_2024"]
-        cntFase23["contagem_fase_aeroporto_2023\n345 linhas"]
-        cntFase24["contagem_fase_aeroporto_2024\n385 linhas"]
         cntAeroporto23["contagem_ocorrencias_aeroporto_2023\n207 linhas"]
         cntAeroporto24["contagem_ocorrencias_aeroporto_2024\n227 linhas"]
     end
@@ -373,10 +281,10 @@ flowchart TD
     dfOC --> dfComFase
     dfComFase -->|"filter_by_year 2023"| dfFase23
     dfComFase -->|"filter_by_year 2024"| dfFase24
-    dfFase23 -->|"_build_fase_aeroporto\nmap_fase_airport.json"| cntFase23
-    dfFase24 -->|"_build_fase_aeroporto\nmap_fase_airport.json"| cntFase24
-    dfFase23 -->|"_build_ocorrencias_por_aeroporto"| cntAeroporto23
-    dfFase24 -->|"_build_ocorrencias_por_aeroporto"| cntAeroporto24
+    dfFase23 -->|"build_ocorrencias_por_aeroporto\nresolve_aeroporto"| cntAeroporto23
+    dfFase24 -->|"build_ocorrencias_por_aeroporto\nresolve_aeroporto"| cntAeroporto24
+    dfAE -->|"passed to\nbuild_ocorrencias_por_aeroporto"| cntAeroporto23
+    dfAE -->|"passed to\nbuild_ocorrencias_por_aeroporto"| cntAeroporto24
 
     subgraph vra [Pipeline VRA]
         movBR23["contagem_movimentos_br_icao_2023\n191 linhas"]
@@ -429,7 +337,7 @@ flowchart TD
 
 #### Pipeline fase × aeroporto
 
-O `inner join` entre `df_ocorrencia` e `df_aeronave` (filtrado para fases não nulas) garante que apenas ocorrências com fase identificada entrem na análise. O mapeamento `map_fase_airport.json` resolve, para cada fase, se o aeroporto relevante é de origem ou destino. `_build_fase_aeroporto` aplica esse mapeamento linha a linha e agrupa por `(fase, ponta, aeroporto)`. `_build_ocorrencias_por_aeroporto` agrega por `(aeroporto, classificação)` — produzindo a entrada para o join com VRA.
+O `inner join` entre `df_ocorrencia` e `df_aeronave` (filtrado para fases não nulas) garante que apenas ocorrências com fase identificada entrem na análise. A lógica de resolução de aeroporto está centralizada em `resolve_aeroporto()` (`utils/dataframe_operations.py`): faz merge com `df_aeronave` para trazer origem/destino, carrega `map_fase_airport.json` internamente para mapear cada fase à ponta relevante, e resolve o aeroporto por linha. `build_ocorrencias_por_aeroporto()` chama `resolve_aeroporto()` e agrega por `(aeroporto, classificação)` — produzindo a entrada para o join com VRA.
 
 #### Join CENIPA × VRA e taxa
 
@@ -465,7 +373,7 @@ Isso significa que `df_taxa_aeroporto_*` representa principalmente **aviação c
 | **Linhas de referência P50 e P75** no scatter | Dividem os aeroportos em quadrantes interpretáveis (alto tráfego seguro vs. arriscado) sem depender de limiares arbitrários | Thresholds fixos: valores absolutos sem contexto distribucional |
 | **`taxa_grave` e `taxa_incidente` separadas** | Acidentes/graves e incidentes têm severidade e taxas base muito diferentes; a separação preserva o sinal de cada dimensão de risco | Taxa combinada: ocultaria aeroportos com muitos incidentes mas poucos acidentes, e vice-versa |
 | **Filtro "Brasil" na descrição ANAC** para identificar aeroporto brasileiro | Cobre prefixos ICAO não-SB (`SN*`, `SS*`, `SWXX`, etc.) comuns na aviação regional e geral | Prefixo `SB` apenas: excluiria ~15–20% dos aeródromos brasileiros cadastrados no VRA |
-| **`inner join`** entre ocorrencia e aeronave (por fase) | Garante que apenas ocorrências com fase conhecida entrem na análise de fase × aeroporto | `left join`: introduziria linhas com fase nula que propagariam `NaN` nos groupbys seguintes |
+| **`inner join`** entre ocorrencia e aeronave (por fase) | Garante que apenas ocorrências com fase conhecida entrem na análise de aeroporto | `left join`: introduziria linhas com fase nula que propagariam `NaN` nos groupbys seguintes |
 | **Mediana como medida central** para incidentes por cidade | Média (17,75) é fortemente distorcida por poucos outliers; mediana (2,0) representa a cidade típica | Média apenas: enganosa para distribuições assimétricas à direita com desvio padrão > média |
 | **`map_fase_airport.json` externo** para resolver ponta | Separa a lógica de domínio do código; facilita ajustes sem tocar no notebook | Condicional `if/elif` hardcoded no notebook: frágil e difícil de auditar |
 
@@ -490,10 +398,12 @@ Isso significa que `df_taxa_aeroporto_*` representa principalmente **aviação c
 
 - **`DataFrameOperations.load_dataframe`** — wrapper sobre `pd.read_csv` que concatena múltiplos arquivos com `ignore_index=True`, aplicando `sep`, `encoding` e `usecols` uniformemente. VRA requer `encoding="utf-8"` explícito; o padrão da classe é `latin1` (correto para CENIPA).
 - **`filter_by_year(df, col, years)`** — utilitário em `dataframe_operations.py` que filtra um DataFrame por ano a partir de uma coluna de data já convertida para `datetime`.
+- **`resolve_aeroporto(df_com_fase, df_aeronave)`** — helper em `dataframe_operations.py` que centraliza a lógica de merge com `df_aeronave` + mapeamento de fase para ponta + resolução do aeroporto relevante. Carrega `map_fase_airport.json` internamente. Usado por `build_ocorrencias_por_aeroporto` e `build_fase_aeroporto`.
+- **`build_ocorrencias_por_aeroporto(df_com_fase, df_aeronave)`** — chama `resolve_aeroporto`, filtra aeroportos não identificados, e agrega por `(aeroporto, classificação)`. Substitui a função inline `_build_ocorrencias_por_aeroporto` que antes vivia no notebook.
 - **`scatter_map` vs `scatter_mapbox`** — o notebook usa `ptex.scatter_map` (introduzido no Plotly ≥ 5.15), que substitui o `scatter_mapbox` depreciado e não requer token Mapbox para estilos abertos.
 - **`map_fase_airport.json`** — tabela de lookup externa que mapeia cada fase de operação (`aeronave_fase_operacao`) à coluna de aeroporto relevante (`aeronave_voo_origem` ou `aeronave_voo_destino`). Desacopla a lógica de domínio do código Python.
 - **`sys.path` dinâmico** — o notebook adiciona `Path.cwd()` e `Path.cwd() / "source"` ao `sys.path` para que `from utils...` funcione independentemente de o kernel ser iniciado no root do repositório ou dentro de `source/`.
-- **Exportação para `data/processed/`** — `df_taxa_aeroporto_*` e `contagem_movimentos_br_*` são exportados como CSV via `PROCESSED_DIR` definido em `paths.py`, separando dados intermediários dos dados brutos.
+- **Exportação para `data/processed/`** — `df_taxa_aeroporto_*` é exportado como CSV via `PROCESSED_DIR` definido em `paths.py`, separando dados intermediários dos dados brutos.
 
 ---
 
@@ -504,7 +414,7 @@ sprint1-mvp/
 ├── source/
 │   ├── mvp.ipynb                    # notebook principal de análise
 │   └── utils/
-│       ├── dataframe_operations.py  # DataFrameOperations, filter_by_year, load_datasource_urls
+│       ├── dataframe_operations.py  # DataFrameOperations, filter_by_year, resolve_aeroporto, build_*
 │       ├── datasources.json         # mapa nome lógico → URL raw GitHub (CENIPA + VRA mensais)
 │       ├── map_fase_airport.json    # fase_operacao → ponta (aeronave_voo_origem / destino)
 │       ├── paths.py                 # PROCESSED_DIR, CHARTS_DIR
@@ -516,7 +426,6 @@ sprint1-mvp/
 │   │       ├── 2023/                # VRA_2023_01.csv … VRA_2023_12.csv
 │   │       └── 2024/                # VRA_2024_01.csv … VRA_2024_12.csv
 │   └── processed/                   # taxa_ocorrencia_aeroporto_{2023,2024}.csv
-│                                    # contagem_movimentos_br_{2023,2024}.csv
 ├── charts/                          # figuras geradas (diretório versionado com .gitkeep)
 ├── analysis.md                      # este documento
 ├── PROJECT_CONTEXT.md               # referência rápida para contexto de IA e novos devs
@@ -528,7 +437,7 @@ sprint1-mvp/
 | Caminho | Papel |
 |---|---|
 | `source/mvp.ipynb` | Toda a análise: carga, limpeza, ETL, visualizações e exportação |
-| `utils/dataframe_operations.py` | Abstração de carga de CSV e filtragem por ano |
+| `utils/dataframe_operations.py` | Carga de CSV, filtragem por ano, resolução de aeroporto (`resolve_aeroporto`) e agregações CENIPA (`build_ocorrencias_por_aeroporto`, `build_fase_aeroporto`) |
 | `utils/datasources.json` | Ponto único de verdade para URLs das fontes de dados |
 | `utils/map_fase_airport.json` | Lógica de domínio: qual ponta do voo é relevante para cada fase |
 | `utils/paths.py` | Constantes de diretório para saídas do notebook |

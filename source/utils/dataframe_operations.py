@@ -35,6 +35,91 @@ def load_datasource_urls(json_path: str | Path | None = None) -> dict[str, str]:
     return {str(k): str(v) for k, v in data.items()}
 
 
+def _load_fase_para_ponta(json_path: str | Path | None = None) -> dict[str, str]:
+    """Load the flight-phase → airport-column mapping from JSON."""
+    if json_path is None:
+        json_path = Path(__file__).resolve().parent / "map_fase_airport.json"
+    with Path(json_path).open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+def resolve_aeroporto(
+    df_com_fase: pd.DataFrame,
+    df_aeronave: pd.DataFrame,
+    fase_para_ponta: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """Merge occurrence+phase data with aircraft origin/destination and resolve
+    the airport where the occurrence most likely happened.
+
+    Returns a copy of *df_com_fase* with added columns:
+    ``aeronave_voo_origem``, ``aeronave_voo_destino``, ``ponta``, ``aeroporto``.
+    """
+    if fase_para_ponta is None:
+        fase_para_ponta = _load_fase_para_ponta()
+
+    aeronave_aeroportos = df_aeronave[
+        ["codigo_ocorrencia2", "aeronave_fase_operacao",
+         "aeronave_voo_origem", "aeronave_voo_destino"]
+    ].drop_duplicates()
+
+    df = df_com_fase.merge(
+        aeronave_aeroportos,
+        on=["codigo_ocorrencia2", "aeronave_fase_operacao"],
+        how="left",
+    ).copy()
+
+    df["ponta"] = df["aeronave_fase_operacao"].map(fase_para_ponta)
+
+    def _pick(row: pd.Series) -> str:
+        ponta = row["ponta"]
+        if ponta == "aeronave_voo_destino":
+            val = row["aeronave_voo_destino"]
+        elif ponta == "aeronave_voo_origem":
+            val = row["aeronave_voo_origem"]
+        else:
+            return "NAO IDENTIFICADO"
+        if pd.notna(val) and str(val).strip() not in ("", "***"):
+            return val
+        return "NAO IDENTIFICADO"
+
+    df["aeroporto"] = df.apply(_pick, axis=1)
+    return df
+
+
+def build_fase_aeroporto(
+    df_com_fase: pd.DataFrame,
+    df_aeronave: pd.DataFrame,
+    fase_para_ponta: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """Count occurrences grouped by (flight phase, ponta, airport)."""
+    df = resolve_aeroporto(df_com_fase, df_aeronave, fase_para_ponta)
+    return (
+        df.groupby(["aeronave_fase_operacao", "ponta", "aeroporto"], dropna=False)
+        .size()
+        .reset_index(name="contagem")
+        .sort_values(["aeronave_fase_operacao", "contagem"], ascending=[True, False])
+        .reset_index(drop=True)
+    )
+
+
+def build_ocorrencias_por_aeroporto(
+    df_com_fase: pd.DataFrame,
+    df_aeronave: pd.DataFrame,
+    fase_para_ponta: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """Count occurrences grouped by (airport, classification), excluding
+    unidentified airports."""
+    df = resolve_aeroporto(df_com_fase, df_aeronave, fase_para_ponta)
+    return (
+        df[df["aeroporto"] != "NAO IDENTIFICADO"]
+        .groupby(["aeroporto", "ocorrencia_classificacao"])
+        .size()
+        .reset_index(name="contagem")
+        .sort_values("contagem", ascending=False)
+        .reset_index(drop=True)
+    )
+
+
 class DataFrameOperations:
     """Loads one or more CSVs via pandas; stores the last combined result."""
 
