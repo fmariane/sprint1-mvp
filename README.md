@@ -1,5 +1,8 @@
 # sprint1-mvp
 ## este readme condensa detalhes tecnicos do desenvolvimento do trabalho.
+### para acessar uma cópia do mvp com graficos e texto do report analitico goto [https://fmariane.github.io/](https://fmariane.github.io/)
+### para acessar o código do notebook, goto ./source/mvp.ipynb
+
 MVP desenvolvido na primeira sprint da especialização em ciência de dados e analytics da puc rio
 
 ---
