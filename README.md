@@ -1,4 +1,5 @@
 # sprint1-mvp
+## este readme condensa detalhes tecnicos do desenvolvimento do trabalho.
 MVP desenvolvido na primeira sprint da especialização em ciência de dados e analytics da puc rio
 
 ---
