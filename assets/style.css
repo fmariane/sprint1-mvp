@@ -1,0 +1,126 @@
+/* ── Layout ── */
+body {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: #f7f8fa;
+  color: #1a1a2e;
+}
+
+.main-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* ── Header ── */
+.header-block {
+  padding: 32px 0 16px;
+}
+
+.main-title {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #0d214f;
+  margin-bottom: 8px;
+}
+
+.main-sub {
+  color: #555;
+  font-size: 1rem;
+  margin-bottom: 24px;
+}
+
+/* ── KPI cards ── */
+.kpi-row {
+  margin-top: 16px;
+}
+
+.kpi-card {
+  border: none;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  text-align: center;
+  padding: 4px;
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  color: #777;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0d214f;
+  margin: 0;
+}
+
+/* ── Sections ── */
+.section {
+  margin-top: 8px;
+}
+
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #0d214f;
+  margin: 32px 0 8px;
+}
+
+.section-hr {
+  border: none;
+  border-top: 1px solid #e0e4ea;
+  margin: 32px 0 0;
+}
+
+.narrative {
+  color: #444;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+
+/* ── Year toggle ── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.toggle-label {
+  font-size: 0.9rem;
+  color: #555;
+  white-space: nowrap;
+}
+
+.year-radio label {
+  margin-right: 16px;
+  font-size: 0.9rem;
+}
+
+/* ── Lookup ── */
+.lookup-row {
+  margin-bottom: 16px;
+}
+
+.airport-output {
+  margin-top: 12px;
+}
+
+.airport-card {
+  border: none;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+  margin-top: 8px;
+}
+
+.rank-text {
+  color: #0d214f;
+  font-weight: 600;
+  margin-bottom: 0;
+}
