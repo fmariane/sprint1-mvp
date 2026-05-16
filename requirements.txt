@@ -1,2 +1,6 @@
 pandas
 plotly
+numpy
+dash>=2.17.0
+dash-bootstrap-components>=1.6.0
+gunicorn
